@@ -13,14 +13,25 @@ export default function App() {
   });
   const [hasImage, setHasImage] = useState(false);
   
-  // State Kunci Posisi Foto
+  // State Kunci Posisi Foto & Toast Warning
   const [isLocked, setIsLocked] = useState(false);
-  const isLockedRef = useRef(false); // Ref synchronous untuk event listener native
+  const [showLockToast, setShowLockToast] = useState(false);
+  const isLockedRef = useRef(false);
+  const toastTimeoutRef = useRef(null);
 
-  // Keep ref sync with state
+  // Sync state kunci ke ref
   useEffect(() => {
     isLockedRef.current = isLocked;
   }, [isLocked]);
+
+  // Function untuk memunculkan pesan peringatan "Terkunci" sementara
+  const triggerLockToast = () => {
+    setShowLockToast(true);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setShowLockToast(false);
+    }, 2000); // Hilang otomatis setelah 2 detik
+  };
 
   // Refs Utama
   const canvasRef = useRef(null);
@@ -30,7 +41,7 @@ export default function App() {
   const frameImgRef = useRef(null);
   const userImgRef = useRef(null);
 
-  // Transformasi Foto (Direct Ref agar bebas lag/re-render)
+  // Transformasi Foto
   const photoPos = useRef({ x: 0, y: 0 });
   const photoScale = useRef(1);
   const isInteracting = useRef(false);
@@ -64,7 +75,7 @@ export default function App() {
     };
   }, []);
 
-  // Fungsi Render Canvas Utama (Tampilan Preview Tanpa Watermark)
+  // Fungsi Render Canvas Utama
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -90,7 +101,7 @@ export default function App() {
       ctx.fillText("Upload Foto Anda Di Sini", canvas.width / 2, canvas.height / 2);
     }
 
-    // 2. Gambar Bingkai Frame (Efek Transparan saat Digeser)
+    // 2. Gambar Bingkai Frame
     if (frameImgRef.current) {
       ctx.save();
       ctx.globalAlpha = isInteracting.current && userImgRef.current ? 0.55 : 1.0;
@@ -104,7 +115,7 @@ export default function App() {
     animFrameId.current = requestAnimationFrame(drawCanvas);
   };
 
-  // Watermark Khusus untuk Hasil Ekspor
+  // Watermark Khusus Ekspor
   const drawWatermark = (ctx, canvas) => {
     ctx.save();
     const fontSize = Math.round(canvas.width * 0.025);
@@ -124,7 +135,7 @@ export default function App() {
     ctx.restore();
   };
 
-  // Helper untuk Membuat Offscreen Canvas Ekspor (Agar Preview Layar Tidak Berkedip)
+  // Offscreen Canvas Ekspor
   const createExportCanvas = () => {
     const mainCanvas = canvasRef.current;
     if (!mainCanvas) return null;
@@ -134,7 +145,6 @@ export default function App() {
     exportCanvas.height = mainCanvas.height;
     const ctx = exportCanvas.getContext("2d");
 
-    // Salin canvas preview dan gambar watermark hanya di memori
     ctx.drawImage(mainCanvas, 0, 0);
     drawWatermark(ctx, exportCanvas);
 
@@ -158,7 +168,8 @@ export default function App() {
         photoScale.current = Math.max(scaleW, scaleH);
         photoPos.current = { x: 0, y: 0 };
         setHasImage(true);
-        setIsLocked(false); // Buka kunci saat upload foto baru
+        setIsLocked(false);
+        setShowLockToast(false);
         requestDraw();
       };
       img.src = event.target.result;
@@ -189,8 +200,11 @@ export default function App() {
     if (!wrapper) return;
 
     const handleTouchStart = (e) => {
-      // Jika TERKUNCI atau belum ada foto, batasi gestur
-      if (!userImgRef.current || isLockedRef.current) return;
+      if (!userImgRef.current) return;
+      if (isLockedRef.current) {
+        triggerLockToast(); // Munculkan peringatan saat diketuk saat terkunci
+        return;
+      }
       e.preventDefault();
       isInteracting.current = true;
 
@@ -241,7 +255,11 @@ export default function App() {
     };
 
     const handleMouseDown = (e) => {
-      if (!userImgRef.current || isLockedRef.current) return;
+      if (!userImgRef.current) return;
+      if (isLockedRef.current) {
+        triggerLockToast(); // Munculkan peringatan saat diklik saat terkunci
+        return;
+      }
       isDragging.current = true;
       isInteracting.current = true;
       const coords = getCanvasCoords(e.clientX, e.clientY);
@@ -271,7 +289,11 @@ export default function App() {
     };
 
     const handleWheel = (e) => {
-      if (!userImgRef.current || isLockedRef.current) return;
+      if (!userImgRef.current) return;
+      if (isLockedRef.current) {
+        triggerLockToast();
+        return;
+      }
       e.preventDefault();
       isInteracting.current = true;
       const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
@@ -305,7 +327,6 @@ export default function App() {
 
   // Actions
   const handleDownload = () => {
-    // Otomatis Kunci Foto Saat Diketuk
     setIsLocked(true);
 
     const exportCanvas = createExportCanvas();
@@ -318,7 +339,6 @@ export default function App() {
   };
 
   const handleShare = async () => {
-    // Otomatis Kunci Foto Saat Diketuk
     setIsLocked(true);
 
     if (!navigator.share) {
@@ -349,7 +369,8 @@ export default function App() {
   const handleReset = () => {
     userImgRef.current = null;
     setHasImage(false);
-    setIsLocked(false); // Otomatis buka kunci & normalkan kembali
+    setIsLocked(false);
+    setShowLockToast(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     requestDraw();
   };
@@ -384,16 +405,16 @@ export default function App() {
         <div
           ref={wrapperRef}
           className={`canvas-container relative w-full aspect-square bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center ${
-            isLocked ? "cursor-not-allowed" : "cursor-move"
+            isLocked ? "cursor-default" : "cursor-move"
           }`}
         >
           <canvas ref={canvasRef} width={1080} height={1080} className="w-full h-full block" />
 
-          {/* Badge Indikator Terkunci */}
-          {isLocked && (
-            <div className="absolute top-3 right-3 bg-slate-900/80 text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-md shadow-md animate-fade-in pointer-events-none">
-              <Lock className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Posisi Terkunci</span>
+          {/* Toast Warning (HANYA MUNCUL SEMENTARA SAAT CANVAS DIKETUK SAAT TERKUNCI) */}
+          {showLockToast && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs sm:text-sm px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-md shadow-lg transition-all duration-300 animate-bounce pointer-events-none z-20">
+              <Lock className="w-4 h-4 text-indigo-400" />
+              <span>Posisi foto terkunci. Ketuk tombol hapus/reset untuk mengubah.</span>
             </div>
           )}
         </div>
