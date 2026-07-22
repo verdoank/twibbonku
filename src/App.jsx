@@ -338,11 +338,12 @@ export default function App() {
   return (
     <div className="flex flex-col items-center min-h-screen px-3 py-6 pb-20">
       
-      {/* Floating Theme Toggle */}
+      {/* Floating Theme Toggle dengan Tooltip */}
       <button
         onClick={() => setIsDark(!isDark)}
         className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-lg flex items-center justify-center opacity-50 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-all duration-300 z-50 hover:scale-110"
         aria-label="Toggle Theme"
+        title={isDark ? "Ganti ke Mode Terang" : "Ganti ke Mode Gelap"}
       >
         {isDark ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6 text-indigo-600" />}
       </button>
@@ -382,6 +383,7 @@ export default function App() {
             <button
               onClick={() => fileInputRef.current?.click()}
               className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
+              title="Pilih foto dari galeri/perangkat kamu"
             >
               <Camera className="w-6 h-6" /> Pilih Foto Kamu
             </button>
@@ -398,7 +400,7 @@ export default function App() {
               <button
                 onClick={handleReset}
                 className="w-14 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center border border-red-500/20 active:scale-95 transition-all"
-                title="Reset Foto"
+                title="Hapus foto & ganti foto baru"
               >
                 <Trash2 className="w-6 h-6" />
               </button>
@@ -406,6 +408,7 @@ export default function App() {
               <button
                 onClick={handleShare}
                 className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
+                title="Bagikan hasil twibbon ke media sosial"
               >
                 <Share2 className="w-6 h-6" /> Bagikan
               </button>
@@ -448,4 +451,4 @@ export default function App() {
       </footer>
     </div>
   );
-  }
+                  }
