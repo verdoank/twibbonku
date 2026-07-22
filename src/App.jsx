@@ -13,7 +13,7 @@ export default function App() {
   });
   const [hasImage, setHasImage] = useState(false);
 
-  // Refs Utama (Menggunakan Ref untuk Koordinat agar Super Cepat & Tidak Ngelag)
+  // Refs Utama
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -21,7 +21,7 @@ export default function App() {
   const frameImgRef = useRef(null);
   const userImgRef = useRef(null);
 
-  // State Transformasi Foto (Diakses Langsung Tanpa Re-render React)
+  // Transformasi Foto (Direct Ref agar bebas lag/re-render)
   const photoPos = useRef({ x: 0, y: 0 });
   const photoScale = useRef(1);
   const isInteracting = useRef(false);
@@ -55,7 +55,7 @@ export default function App() {
     };
   }, []);
 
-  // Fungsi Render Canvas Halus (Memakai requestAnimationFrame)
+  // Fungsi Render Canvas Utama (Tampilan Preview Tanpa Watermark)
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -95,6 +95,7 @@ export default function App() {
     animFrameId.current = requestAnimationFrame(drawCanvas);
   };
 
+  // Watermark Khusus untuk Hasil Ekspor
   const drawWatermark = (ctx, canvas) => {
     ctx.save();
     const fontSize = Math.round(canvas.width * 0.025);
@@ -112,6 +113,23 @@ export default function App() {
     ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
     ctx.fillText(WATERMARK_TEXT, canvas.width - margin, canvas.height - margin);
     ctx.restore();
+  };
+
+  // Helper untuk Membuat Offscreen Canvas Ekspor (Agar Preview Layar Tidak Berkedip)
+  const createExportCanvas = () => {
+    const mainCanvas = canvasRef.current;
+    if (!mainCanvas) return null;
+
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = mainCanvas.width;
+    exportCanvas.height = mainCanvas.height;
+    const ctx = exportCanvas.getContext("2d");
+
+    // Salin canvas preview dan gambar watermark hanya di memori
+    ctx.drawImage(mainCanvas, 0, 0);
+    drawWatermark(ctx, exportCanvas);
+
+    return exportCanvas;
   };
 
   // Upload Foto User
@@ -138,7 +156,7 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  // Helper Koordinat Canvas
+  // Helper Koordinat & Jarak
   const getCanvasCoords = (clientX, clientY) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = canvasRef.current.width / rect.width;
@@ -155,16 +173,14 @@ export default function App() {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  // PENANGANAN TOUCH & MOUSE EVENT NATIVE (AGAR BEBAS LAG & WEB TIDAK SCOLL)
+  // Listener Touch & Mouse Native
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
-    // --- Touch Events ---
     const handleTouchStart = (e) => {
       if (!userImgRef.current) return;
-      e.preventDefault(); // MENCEGAH WEBPAGE IKUT SCROLL/ZOOM
-      
+      e.preventDefault();
       isInteracting.current = true;
 
       if (e.touches.length === 1) {
@@ -184,7 +200,7 @@ export default function App() {
 
     const handleTouchMove = (e) => {
       if (!userImgRef.current) return;
-      e.preventDefault(); // MENCEGAH WEBPAGE IKUT SCROLL/ZOOM
+      e.preventDefault();
 
       if (e.touches.length === 1 && isDragging.current) {
         const coords = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
@@ -212,7 +228,6 @@ export default function App() {
       }
     };
 
-    // --- Mouse Events (Desktop) ---
     const handleMouseDown = (e) => {
       if (!userImgRef.current) return;
       isDragging.current = true;
@@ -257,7 +272,6 @@ export default function App() {
       }, 200);
     };
 
-    // Pasang listener dengan { passive: false } agar preventDefault() berfungsi penuh
     wrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
     wrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
     wrapper.addEventListener('touchend', handleTouchEnd);
@@ -279,17 +293,13 @@ export default function App() {
 
   // Actions
   const handleDownload = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    drawCanvas();
-    drawWatermark(ctx, canvas);
+    const exportCanvas = createExportCanvas();
+    if (!exportCanvas) return;
 
     const link = document.createElement("a");
     link.download = "twibbon-saya.png";
-    link.href = canvas.toDataURL("image/png", 1.0);
+    link.href = exportCanvas.toDataURL("image/png", 1.0);
     link.click();
-
-    drawCanvas();
   };
 
   const handleShare = async () => {
@@ -297,12 +307,11 @@ export default function App() {
       alert("Fitur Web Share tidak didukung di browser ini. Gunakan tombol unduh.");
       return;
     }
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    drawCanvas();
-    drawWatermark(ctx, canvas);
 
-    canvas.toBlob(async (blob) => {
+    const exportCanvas = createExportCanvas();
+    if (!exportCanvas) return;
+
+    exportCanvas.toBlob(async (blob) => {
       if (!blob) return;
       const file = new File([blob], "twibbon.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -316,7 +325,6 @@ export default function App() {
           if (err.name !== "AbortError") alert("Gagal membagikan gambar.");
         }
       }
-      drawCanvas();
     }, "image/png");
   };
 
@@ -330,7 +338,7 @@ export default function App() {
   return (
     <div className="flex flex-col items-center min-h-screen px-3 py-6 pb-20">
       
-      {/* Floating Theme Toggle (Pojok Kanan Bawah, Transparan saat diam) */}
+      {/* Floating Theme Toggle */}
       <button
         onClick={() => setIsDark(!isDark)}
         className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-lg flex items-center justify-center opacity-50 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-all duration-300 z-50 hover:scale-110"
@@ -352,7 +360,7 @@ export default function App() {
       {/* Main Container */}
       <main className="w-full max-w-xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col items-center gap-4 transition-colors">
         
-        {/* Canvas Wrapper dengan Class Kunci touch-action */}
+        {/* Canvas Wrapper */}
         <div
           ref={wrapperRef}
           className="canvas-container relative w-full aspect-square bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center cursor-move"
@@ -440,4 +448,4 @@ export default function App() {
       </footer>
     </div>
   );
-                    }
+  }
