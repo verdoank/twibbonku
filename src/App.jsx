@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Moon, Sun, Camera, Download, Trash2, Share2 } from 'lucide-react';
+import { Moon, Sun, Camera, Download, Trash2, Share2, Lock } from 'lucide-react';
 
 const FRAME_URL = "/twibbon.png";
 const WATERMARK_TEXT = "Dibuat oleh Verdoank";
@@ -12,6 +12,15 @@ export default function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [hasImage, setHasImage] = useState(false);
+  
+  // State Kunci Posisi Foto
+  const [isLocked, setIsLocked] = useState(false);
+  const isLockedRef = useRef(false); // Ref synchronous untuk event listener native
+
+  // Keep ref sync with state
+  useEffect(() => {
+    isLockedRef.current = isLocked;
+  }, [isLocked]);
 
   // Refs Utama
   const canvasRef = useRef(null);
@@ -149,6 +158,7 @@ export default function App() {
         photoScale.current = Math.max(scaleW, scaleH);
         photoPos.current = { x: 0, y: 0 };
         setHasImage(true);
+        setIsLocked(false); // Buka kunci saat upload foto baru
         requestDraw();
       };
       img.src = event.target.result;
@@ -179,7 +189,8 @@ export default function App() {
     if (!wrapper) return;
 
     const handleTouchStart = (e) => {
-      if (!userImgRef.current) return;
+      // Jika TERKUNCI atau belum ada foto, batasi gestur
+      if (!userImgRef.current || isLockedRef.current) return;
       e.preventDefault();
       isInteracting.current = true;
 
@@ -199,7 +210,7 @@ export default function App() {
     };
 
     const handleTouchMove = (e) => {
-      if (!userImgRef.current) return;
+      if (!userImgRef.current || isLockedRef.current) return;
       e.preventDefault();
 
       if (e.touches.length === 1 && isDragging.current) {
@@ -220,6 +231,7 @@ export default function App() {
     };
 
     const handleTouchEnd = (e) => {
+      if (isLockedRef.current) return;
       if (e.touches.length < 2) initialPinchDist.current = null;
       if (e.touches.length === 0) {
         isDragging.current = false;
@@ -229,7 +241,7 @@ export default function App() {
     };
 
     const handleMouseDown = (e) => {
-      if (!userImgRef.current) return;
+      if (!userImgRef.current || isLockedRef.current) return;
       isDragging.current = true;
       isInteracting.current = true;
       const coords = getCanvasCoords(e.clientX, e.clientY);
@@ -241,7 +253,7 @@ export default function App() {
     };
 
     const handleMouseMove = (e) => {
-      if (!isDragging.current || !userImgRef.current) return;
+      if (!isDragging.current || !userImgRef.current || isLockedRef.current) return;
       const coords = getCanvasCoords(e.clientX, e.clientY);
       photoPos.current = {
         x: coords.x - startDragPos.current.x,
@@ -251,7 +263,7 @@ export default function App() {
     };
 
     const handleMouseUp = () => {
-      if (isInteracting.current) {
+      if (isInteracting.current && !isLockedRef.current) {
         isDragging.current = false;
         isInteracting.current = false;
         requestDraw();
@@ -259,7 +271,7 @@ export default function App() {
     };
 
     const handleWheel = (e) => {
-      if (!userImgRef.current) return;
+      if (!userImgRef.current || isLockedRef.current) return;
       e.preventDefault();
       isInteracting.current = true;
       const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
@@ -293,6 +305,9 @@ export default function App() {
 
   // Actions
   const handleDownload = () => {
+    // Otomatis Kunci Foto Saat Diketuk
+    setIsLocked(true);
+
     const exportCanvas = createExportCanvas();
     if (!exportCanvas) return;
 
@@ -303,6 +318,9 @@ export default function App() {
   };
 
   const handleShare = async () => {
+    // Otomatis Kunci Foto Saat Diketuk
+    setIsLocked(true);
+
     if (!navigator.share) {
       alert("Fitur Web Share tidak didukung di browser ini. Gunakan tombol unduh.");
       return;
@@ -331,6 +349,7 @@ export default function App() {
   const handleReset = () => {
     userImgRef.current = null;
     setHasImage(false);
+    setIsLocked(false); // Otomatis buka kunci & normalkan kembali
     if (fileInputRef.current) fileInputRef.current.value = "";
     requestDraw();
   };
@@ -338,7 +357,7 @@ export default function App() {
   return (
     <div className="flex flex-col items-center min-h-screen px-3 py-6 pb-20">
       
-      {/* Floating Theme Toggle dengan Tooltip */}
+      {/* Floating Theme Toggle */}
       <button
         onClick={() => setIsDark(!isDark)}
         className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-lg flex items-center justify-center opacity-50 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-all duration-300 z-50 hover:scale-110"
@@ -364,9 +383,19 @@ export default function App() {
         {/* Canvas Wrapper */}
         <div
           ref={wrapperRef}
-          className="canvas-container relative w-full aspect-square bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center cursor-move"
+          className={`canvas-container relative w-full aspect-square bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center ${
+            isLocked ? "cursor-not-allowed" : "cursor-move"
+          }`}
         >
           <canvas ref={canvasRef} width={1080} height={1080} className="w-full h-full block" />
+
+          {/* Badge Indikator Terkunci */}
+          {isLocked && (
+            <div className="absolute top-3 right-3 bg-slate-900/80 text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-md shadow-md animate-fade-in pointer-events-none">
+              <Lock className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Posisi Terkunci</span>
+            </div>
+          )}
         </div>
 
         {/* Action Controls */}
@@ -451,4 +480,4 @@ export default function App() {
       </footer>
     </div>
   );
-                  }
+    }
