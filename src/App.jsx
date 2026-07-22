@@ -24,7 +24,7 @@ export default function App() {
     isLockedRef.current = isLocked;
   }, [isLocked]);
 
-  // Function untuk memunculkan pesan peringatan "Terkunci" sementara
+  // Function untuk memunculkan badge "Posisi Terkunci" sementara saat diketuk
   const triggerLockToast = () => {
     setShowLockToast(true);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -202,7 +202,7 @@ export default function App() {
     const handleTouchStart = (e) => {
       if (!userImgRef.current) return;
       if (isLockedRef.current) {
-        triggerLockToast(); // Munculkan peringatan saat diketuk saat terkunci
+        triggerLockToast();
         return;
       }
       e.preventDefault();
@@ -257,7 +257,7 @@ export default function App() {
     const handleMouseDown = (e) => {
       if (!userImgRef.current) return;
       if (isLockedRef.current) {
-        triggerLockToast(); // Munculkan peringatan saat diklik saat terkunci
+        triggerLockToast();
         return;
       }
       isDragging.current = true;
@@ -410,11 +410,11 @@ export default function App() {
         >
           <canvas ref={canvasRef} width={1080} height={1080} className="w-full h-full block" />
 
-          {/* Toast Warning (HANYA MUNCUL SEMENTARA SAAT CANVAS DIKETUK SAAT TERKUNCI) */}
+          {/* Badge Indikator Terkunci (Pojok Kanan Atas - Muncul Sementara) */}
           {showLockToast && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs sm:text-sm px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-md shadow-lg transition-all duration-300 animate-bounce pointer-events-none z-20">
-              <Lock className="w-4 h-4 text-indigo-400" />
-              <span>Posisi terkunci.</span>
+            <div className="absolute top-3 right-3 bg-slate-900/80 text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-md shadow-md transition-all duration-300 pointer-events-none z-20">
+              <Lock className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Posisi Terkunci</span>
             </div>
           )}
         </div>
@@ -501,4 +501,4 @@ export default function App() {
       </footer>
     </div>
   );
-    }
+  }
