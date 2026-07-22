@@ -2,11 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Touch manipulation untuk cegah double tap zoom di mobile */
-* {
-  touch-action: manipulation;
+html, body {
+  /* Mencegah efek bounce/rubber-banding saat scroll di mobile */
+  overscroll-behavior-y: none;
 }
 
-html {
-  scroll-behavior: smooth;
+/* Mengunci canvas agar murni menangani gesture touch pribadi */
+.canvas-container {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
