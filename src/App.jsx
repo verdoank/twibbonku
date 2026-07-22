@@ -5,32 +5,35 @@ const FRAME_URL = "/twibbon.png";
 const WATERMARK_TEXT = "Dibuat oleh Verdoank";
 
 export default function App() {
-  // State Tema
+  // State Tema & UI
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
     if (saved) return saved === 'dark';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
+  const [hasImage, setHasImage] = useState(false);
 
-  // State Image & Interaction
-  const [userImage, setUserImage] = useState(null);
-  const [photoPos, setPhotoPos] = useState({ x: 0, y: 0 });
-  const [photoScale, setPhotoScale] = useState(1);
-  const [isInteracting, setIsInteracting] = useState(false);
-
-  // Refs
+  // Refs Utama (Menggunakan Ref untuk Koordinat agar Super Cepat & Tidak Ngelag)
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
   const fileInputRef = useRef(null);
+  
   const frameImgRef = useRef(null);
   const userImgRef = useRef(null);
 
+  // State Transformasi Foto (Diakses Langsung Tanpa Re-render React)
+  const photoPos = useRef({ x: 0, y: 0 });
+  const photoScale = useRef(1);
+  const isInteracting = useRef(false);
+
+  // Variable Bantuan Gestur
   const isDragging = useRef(false);
   const startDragPos = useRef({ x: 0, y: 0 });
   const initialPinchDist = useRef(null);
   const initialScale = useRef(1);
+  const animFrameId = useRef(null);
 
-  // Sync Theme ke HTML class
+  // Sync Tema Dark Mode
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -41,18 +44,18 @@ export default function App() {
     }
   }, [isDark]);
 
-  // Load Frame Image
+  // Load Bingkai Twibbon
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = FRAME_URL;
     img.onload = () => {
       frameImgRef.current = img;
-      drawCanvas();
+      requestDraw();
     };
   }, []);
 
-  // Draw Canvas Routine
+  // Fungsi Render Canvas Halus (Memakai requestAnimationFrame)
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -60,11 +63,11 @@ export default function App() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw User Image
+    // 1. Gambar Foto User
     if (userImgRef.current) {
       ctx.save();
-      ctx.translate(canvas.width / 2 + photoPos.x, canvas.height / 2 + photoPos.y);
-      ctx.scale(photoScale, photoScale);
+      ctx.translate(canvas.width / 2 + photoPos.current.x, canvas.height / 2 + photoPos.current.y);
+      ctx.scale(photoScale.current, photoScale.current);
       ctx.drawImage(
         userImgRef.current,
         -userImgRef.current.width / 2,
@@ -78,18 +81,19 @@ export default function App() {
       ctx.fillText("Upload Foto Anda Di Sini", canvas.width / 2, canvas.height / 2);
     }
 
-    // Draw Frame
+    // 2. Gambar Bingkai Frame (Efek Transparan saat Digeser)
     if (frameImgRef.current) {
       ctx.save();
-      ctx.globalAlpha = isInteracting && userImgRef.current ? 0.55 : 1.0;
+      ctx.globalAlpha = isInteracting.current && userImgRef.current ? 0.55 : 1.0;
       ctx.drawImage(frameImgRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
     }
   };
 
-  useEffect(() => {
-    drawCanvas();
-  }, [photoPos, photoScale, isInteracting, isDark]);
+  const requestDraw = () => {
+    if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+    animFrameId.current = requestAnimationFrame(drawCanvas);
+  };
 
   const drawWatermark = (ctx, canvas) => {
     ctx.save();
@@ -110,7 +114,7 @@ export default function App() {
     ctx.restore();
   };
 
-  // Upload Photo
+  // Upload Foto User
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -123,53 +127,26 @@ export default function App() {
         const canvas = canvasRef.current;
         const scaleW = canvas.width / img.width;
         const scaleH = canvas.height / img.height;
-        const initialS = Math.max(scaleW, scaleH);
         
-        setPhotoScale(initialS);
-        setPhotoPos({ x: 0, y: 0 });
-        setUserImage(img);
+        photoScale.current = Math.max(scaleW, scaleH);
+        photoPos.current = { x: 0, y: 0 };
+        setHasImage(true);
+        requestDraw();
       };
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
 
-  // Canvas Interactions
-  const getCanvasCoords = (e) => {
+  // Helper Koordinat Canvas
+  const getCanvasCoords = (clientX, clientY) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = canvasRef.current.width / rect.width;
     const scaleY = canvasRef.current.height / rect.height;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
     };
-  };
-
-  const handleMouseDown = (e) => {
-    if (!userImage) return;
-    isDragging.current = true;
-    setIsInteracting(true);
-    const coords = getCanvasCoords(e);
-    startDragPos.current = {
-      x: coords.x - photoPos.x,
-      y: coords.y - photoPos.y
-    };
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging.current || !userImage) return;
-    const coords = getCanvasCoords(e);
-    setPhotoPos({
-      x: coords.x - startDragPos.current.x,
-      y: coords.y - startDragPos.current.y
-    });
-  };
-
-  const handleMouseUp = () => {
-    if (isDragging.current) {
-      isDragging.current = false;
-      setIsInteracting(false);
-    }
   };
 
   const getDistance = (t1, t2) => {
@@ -178,57 +155,127 @@ export default function App() {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  const handleTouchStart = (e) => {
-    if (!userImage) return;
-    setIsInteracting(true);
+  // PENANGANAN TOUCH & MOUSE EVENT NATIVE (AGAR BEBAS LAG & WEB TIDAK SCOLL)
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
 
-    if (e.touches.length === 1) {
+    // --- Touch Events ---
+    const handleTouchStart = (e) => {
+      if (!userImgRef.current) return;
+      e.preventDefault(); // MENCEGAH WEBPAGE IKUT SCROLL/ZOOM
+      
+      isInteracting.current = true;
+
+      if (e.touches.length === 1) {
+        isDragging.current = true;
+        const coords = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        startDragPos.current = {
+          x: coords.x - photoPos.current.x,
+          y: coords.y - photoPos.current.y
+        };
+      } else if (e.touches.length === 2) {
+        isDragging.current = false;
+        initialPinchDist.current = getDistance(e.touches[0], e.touches[1]);
+        initialScale.current = photoScale.current;
+      }
+      requestDraw();
+    };
+
+    const handleTouchMove = (e) => {
+      if (!userImgRef.current) return;
+      e.preventDefault(); // MENCEGAH WEBPAGE IKUT SCROLL/ZOOM
+
+      if (e.touches.length === 1 && isDragging.current) {
+        const coords = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        photoPos.current = {
+          x: coords.x - startDragPos.current.x,
+          y: coords.y - startDragPos.current.y
+        };
+        requestDraw();
+      } else if (e.touches.length === 2 && initialPinchDist.current) {
+        const currentDist = getDistance(e.touches[0], e.touches[1]);
+        if (currentDist > 0) {
+          const ratio = currentDist / initialPinchDist.current;
+          photoScale.current = initialScale.current * ratio;
+          requestDraw();
+        }
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      if (e.touches.length < 2) initialPinchDist.current = null;
+      if (e.touches.length === 0) {
+        isDragging.current = false;
+        isInteracting.current = false;
+        requestDraw();
+      }
+    };
+
+    // --- Mouse Events (Desktop) ---
+    const handleMouseDown = (e) => {
+      if (!userImgRef.current) return;
       isDragging.current = true;
-      const coords = getCanvasCoords(e.touches[0]);
+      isInteracting.current = true;
+      const coords = getCanvasCoords(e.clientX, e.clientY);
       startDragPos.current = {
-        x: coords.x - photoPos.x,
-        y: coords.y - photoPos.y
+        x: coords.x - photoPos.current.x,
+        y: coords.y - photoPos.current.y
       };
-    } else if (e.touches.length === 2) {
-      isDragging.current = false;
-      initialPinchDist.current = getDistance(e.touches[0], e.touches[1]);
-      initialScale.current = photoScale;
-    }
-  };
+      requestDraw();
+    };
 
-  const handleTouchMove = (e) => {
-    if (!userImage) return;
-
-    if (e.touches.length === 1 && isDragging.current) {
-      const coords = getCanvasCoords(e.touches[0]);
-      setPhotoPos({
+    const handleMouseMove = (e) => {
+      if (!isDragging.current || !userImgRef.current) return;
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      photoPos.current = {
         x: coords.x - startDragPos.current.x,
         y: coords.y - startDragPos.current.y
-      });
-    } else if (e.touches.length === 2 && initialPinchDist.current) {
-      const currentDist = getDistance(e.touches[0], e.touches[1]);
-      if (currentDist > 0) {
-        const ratio = currentDist / initialPinchDist.current;
-        setPhotoScale(initialScale.current * ratio);
+      };
+      requestDraw();
+    };
+
+    const handleMouseUp = () => {
+      if (isInteracting.current) {
+        isDragging.current = false;
+        isInteracting.current = false;
+        requestDraw();
       }
-    }
-  };
+    };
 
-  const handleTouchEnd = (e) => {
-    if (e.touches.length < 2) initialPinchDist.current = null;
-    if (e.touches.length === 0) {
-      isDragging.current = false;
-      setIsInteracting(false);
-    }
-  };
+    const handleWheel = (e) => {
+      if (!userImgRef.current) return;
+      e.preventDefault();
+      isInteracting.current = true;
+      const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
+      photoScale.current *= zoomFactor;
+      requestDraw();
 
-  const handleWheel = (e) => {
-    if (!userImage) return;
-    setIsInteracting(true);
-    const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
-    setPhotoScale((prev) => prev * zoomFactor);
-    setTimeout(() => setIsInteracting(false), 300);
-  };
+      setTimeout(() => {
+        isInteracting.current = false;
+        requestDraw();
+      }, 200);
+    };
+
+    // Pasang listener dengan { passive: false } agar preventDefault() berfungsi penuh
+    wrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
+    wrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
+    wrapper.addEventListener('touchend', handleTouchEnd);
+    wrapper.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    wrapper.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      wrapper.removeEventListener('touchstart', handleTouchStart);
+      wrapper.removeEventListener('touchmove', handleTouchMove);
+      wrapper.removeEventListener('touchend', handleTouchEnd);
+      wrapper.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      wrapper.removeEventListener('wheel', handleWheel);
+    };
+  }, [hasImage]);
 
   // Actions
   const handleDownload = () => {
@@ -275,9 +322,9 @@ export default function App() {
 
   const handleReset = () => {
     userImgRef.current = null;
-    setUserImage(null);
+    setHasImage(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    drawCanvas();
+    requestDraw();
   };
 
   return (
@@ -305,17 +352,10 @@ export default function App() {
       {/* Main Container */}
       <main className="w-full max-w-xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col items-center gap-4 transition-colors">
         
-        {/* Canvas Wrapper */}
+        {/* Canvas Wrapper dengan Class Kunci touch-action */}
         <div
           ref={wrapperRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onWheel={handleWheel}
-          className="relative w-full aspect-square bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center cursor-move select-none"
+          className="canvas-container relative w-full aspect-square bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center cursor-move"
         >
           <canvas ref={canvasRef} width={1080} height={1080} className="w-full h-full block" />
         </div>
@@ -330,7 +370,7 @@ export default function App() {
             className="hidden"
           />
 
-          {!userImage ? (
+          {!hasImage ? (
             <button
               onClick={() => fileInputRef.current?.click()}
               className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
@@ -380,8 +420,8 @@ export default function App() {
         </h3>
         <ul className="list-disc pl-5 text-sm sm:text-base text-slate-500 dark:text-slate-400 space-y-1 mb-4">
           <li><strong>Tanpa Install Aplikasi:</strong> Hemat ruang penyimpanan perangkat Kamu.</li>
-          <li><strong>Kontrol Sentuh Intuitif:</strong> Drag dan pinch zoom yang mudah.</li>
-          <li><strong>Kualitas Tinggi (HD 1080p):</strong> Hasil tajam tanpa mengurang resolusi awal.</li>
+          <li><strong>Kontrol Sentuh Intuitif:</strong> Drag dan pinch zoom yang halus dan ringan.</li>
+          <li><strong>Kualitas Tinggi (HD 1080p):</strong> Hasil tajam tanpa mengurangi resolusi awal.</li>
           <li><strong>Aman & Privat:</strong> Proses dilakukan 100% langsung di browser Kamu.</li>
         </ul>
 
@@ -400,4 +440,4 @@ export default function App() {
       </footer>
     </div>
   );
-}
+                    }
