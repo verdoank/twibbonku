@@ -414,7 +414,7 @@ export default function App() {
           {showLockToast && (
             <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs sm:text-sm px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-md shadow-lg transition-all duration-300 animate-bounce pointer-events-none z-20">
               <Lock className="w-4 h-4 text-indigo-400" />
-              <span>Posisi foto terkunci. Ketuk tombol hapus/reset untuk mengubah.</span>
+              <span>Posisi foto terkunci.</span>
             </div>
           )}
         </div>
