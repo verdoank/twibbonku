@@ -1,5 +1,7 @@
+// src/Home.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Moon, Sun, Camera, Download, Trash2, Share2, Lock } from 'lucide-react';
+import toast from 'react-hot-toast'; // Impor toast
 
 const FRAME_URL = "/twibbon.png";
 const WATERMARK_TEXT = "DIBUAT OLEH VERDOANK";
@@ -159,6 +161,7 @@ export default function Home() {
         setIsLocked(false);
         setShowLockToast(false);
         requestDraw();
+        toast.success("Foto berhasil diunggah!");
       };
       img.src = event.target.result;
     };
@@ -321,13 +324,14 @@ export default function Home() {
     link.download = "twibbon-saya.png";
     link.href = exportCanvas.toDataURL("image/png", 1.0);
     link.click();
+    toast.success("Gambar berhasil diunduh!");
   };
 
   const handleShare = async () => {
     setIsLocked(true);
 
     if (!navigator.share) {
-      alert("Fitur Web Share tidak didukung di browser ini. Gunakan tombol unduh.");
+      toast.error("Fitur Web Share tidak didukung di browser ini.");
       return;
     }
 
@@ -345,7 +349,7 @@ export default function Home() {
             files: [file]
           });
         } catch (err) {
-          if (err.name !== "AbortError") alert("Gagal membagikan gambar.");
+          if (err.name !== "AbortError") toast.error("Gagal membagikan gambar.");
         }
       }
     }, "image/png");
@@ -358,6 +362,7 @@ export default function Home() {
     setShowLockToast(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     requestDraw();
+    toast.success("Foto berhasil dihapus");
   };
 
   return (
@@ -477,4 +482,4 @@ export default function Home() {
       </footer>
     </div>
   );
-}
+    }
