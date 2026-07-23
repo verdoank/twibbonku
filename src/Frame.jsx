@@ -2,28 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Moon, Sun, Camera, Download, Trash2, Share2, Lock, Image as ImageIcon, RotateCcw } from 'lucide-react';
 
 const DEFAULT_FRAME_URL = "/twibbon.png";
-const WATERMARK_TEXT = "DIBUAT OLEH VERDOANK";
+const WATERMARK_TEXT = "Twibbon Maker Online";
 
 export default function Frame() {
-  // State Tema & UI (Ambil langsung dari kelas HTML agar bebas flash)
   const [isDark, setIsDark] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
   const [hasImage, setHasImage] = useState(false);
   const [hasCustomFrame, setHasCustomFrame] = useState(false);
   
-  // State Kunci Posisi Foto & Toast Warning
   const [isLocked, setIsLocked] = useState(false);
   const [showLockToast, setShowLockToast] = useState(false);
   const isLockedRef = useRef(false);
   const toastTimeoutRef = useRef(null);
 
-  // Sync state kunci ke ref
   useEffect(() => {
     isLockedRef.current = isLocked;
   }, [isLocked]);
 
-  // Function untuk memunculkan badge "Posisi Terkunci" sementara saat diketuk
   const triggerLockToast = () => {
     setShowLockToast(true);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -32,7 +28,6 @@ export default function Frame() {
     }, 2000);
   };
 
-  // Refs Utama
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
   const userFileInputRef = useRef(null);
@@ -41,19 +36,16 @@ export default function Frame() {
   const frameImgRef = useRef(null);
   const userImgRef = useRef(null);
 
-  // Transformasi Foto
   const photoPos = useRef({ x: 0, y: 0 });
   const photoScale = useRef(1);
   const isInteracting = useRef(false);
 
-  // Variable Bantuan Gestur
   const isDragging = useRef(false);
   const startDragPos = useRef({ x: 0, y: 0 });
   const initialPinchDist = useRef(null);
   const initialScale = useRef(1);
   const animFrameId = useRef(null);
 
-  // Sync Tema Dark Mode ke DOM & LocalStorage
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -64,7 +56,6 @@ export default function Frame() {
     }
   }, [isDark]);
 
-  // Load Bingkai Default (twibbon.png)
   const loadDefaultFrame = () => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -83,7 +74,6 @@ export default function Frame() {
     loadDefaultFrame();
   }, []);
 
-  // Fungsi Render Canvas Utama
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -91,7 +81,6 @@ export default function Frame() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Gambar Foto User
     if (userImgRef.current) {
       ctx.save();
       ctx.translate(canvas.width / 2 + photoPos.current.x, canvas.height / 2 + photoPos.current.y);
@@ -109,7 +98,6 @@ export default function Frame() {
       ctx.fillText("Upload Foto Anda Di Sini", canvas.width / 2, canvas.height / 2);
     }
 
-    // 2. Gambar Bingkai Frame
     if (frameImgRef.current) {
       ctx.save();
       ctx.globalAlpha = isInteracting.current && userImgRef.current ? 0.55 : 1.0;
@@ -123,7 +111,6 @@ export default function Frame() {
     animFrameId.current = requestAnimationFrame(drawCanvas);
   };
 
-  // Watermark Khusus Ekspor
   const drawWatermark = (ctx, canvas) => {
     ctx.save();
     const fontSize = Math.round(canvas.width * 0.025);
@@ -143,7 +130,6 @@ export default function Frame() {
     ctx.restore();
   };
 
-  // Offscreen Canvas Ekspor
   const createExportCanvas = () => {
     const mainCanvas = canvasRef.current;
     if (!mainCanvas) return null;
@@ -159,7 +145,6 @@ export default function Frame() {
     return exportCanvas;
   };
 
-  // Upload Foto User
   const handleUserImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -185,7 +170,6 @@ export default function Frame() {
     reader.readAsDataURL(file);
   };
 
-  // Upload Bingkai Custom
   const handleFrameUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -203,13 +187,11 @@ export default function Frame() {
     reader.readAsDataURL(file);
   };
 
-  // Reset Frame ke Default
   const handleResetFrame = () => {
     loadDefaultFrame();
     if (frameFileInputRef.current) frameFileInputRef.current.value = "";
   };
 
-  // Helper Koordinat & Jarak
   const getCanvasCoords = (clientX, clientY) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = canvasRef.current.width / rect.width;
@@ -226,7 +208,6 @@ export default function Frame() {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  // Listener Touch & Mouse Native
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -357,7 +338,6 @@ export default function Frame() {
     };
   }, [hasImage]);
 
-  // Actions
   const handleDownload = () => {
     setIsLocked(true);
 
@@ -408,7 +388,7 @@ export default function Frame() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-3 py-6 pb-20">
+    <div className="flex flex-col items-center min-h-screen px-3 py-4 pb-20">
       
       {/* Floating Theme Toggle */}
       <button
@@ -421,48 +401,18 @@ export default function Frame() {
       </button>
 
       {/* Header */}
-      <header className="text-center mb-5 max-w-xl">
+      <header className="text-center my-4 max-w-xl">
         <h1 className="text-2xl sm:text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-1">
           Twibbon Custom Maker
         </h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
-          Unggah bingkai twibbon kreasi Anda sendiri atau gunakan bingkai default!
+          Unggah foto profil Anda, lalu sesuaikan atau ganti bingkai twibbon sendiri!
         </p>
       </header>
 
       {/* Main Container */}
       <main className="w-full max-w-xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col items-center gap-4 transition-colors">
         
-        {/* Tombol Opsi Unggah Bingkai / Custom Frame */}
-        <div className="w-full flex gap-2">
-          <input
-            type="file"
-            ref={frameFileInputRef}
-            onChange={handleFrameUpload}
-            accept="image/png"
-            className="hidden"
-          />
-          
-          <button
-            onClick={() => frameFileInputRef.current?.click()}
-            className="flex-1 h-11 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium text-sm flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-600 transition-all"
-            title="Ganti bingkai dengan file PNG transparan buatan Anda"
-          >
-            <ImageIcon className="w-4 h-4 text-indigo-500" />
-            {hasCustomFrame ? "Ganti Bingkai Custom" : "Unggah Bingkai Sendiri (PNG)"}
-          </button>
-
-          {hasCustomFrame && (
-            <button
-              onClick={handleResetFrame}
-              className="h-11 px-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-600 transition-all"
-              title="Kembalikan ke bingkai default"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
         {/* Canvas Wrapper */}
         <div
           ref={wrapperRef}
@@ -472,7 +422,6 @@ export default function Frame() {
         >
           <canvas ref={canvasRef} width={1080} height={1080} className="w-full h-full block" />
 
-          {/* Badge Indikator Terkunci */}
           {showLockToast && (
             <div className="absolute top-3 right-3 bg-slate-900/80 text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-md shadow-md transition-all duration-300 pointer-events-none z-20">
               <Lock className="w-3.5 h-3.5 text-indigo-400" />
@@ -481,8 +430,10 @@ export default function Frame() {
           )}
         </div>
 
-        {/* Action Controls */}
-        <div className="w-full">
+        {/* Control Section */}
+        <div className="w-full flex flex-col gap-3">
+          
+          {/* 1. Tombol Foto User (Input Utama) */}
           <input
             type="file"
             ref={userFileInputRef}
@@ -526,6 +477,37 @@ export default function Frame() {
               </button>
             </div>
           )}
+
+          {/* 2. Tombol Unggah Bingkai PNG Dipindah ke Bawah (Opsi Sekunder) */}
+          <div className="w-full flex gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/50">
+            <input
+              type="file"
+              ref={frameFileInputRef}
+              onChange={handleFrameUpload}
+              accept="image/png"
+              className="hidden"
+            />
+            
+            <button
+              onClick={() => frameFileInputRef.current?.click()}
+              className="flex-1 h-11 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-600/80 transition-all active:scale-95"
+              title="Ganti bingkai dengan file PNG transparan buatan Anda"
+            >
+              <ImageIcon className="w-4 h-4 text-indigo-500" />
+              {hasCustomFrame ? "Ganti Bingkai Custom (PNG)" : "Unggah Bingkai Sendiri (PNG)"}
+            </button>
+
+            {hasCustomFrame && (
+              <button
+                onClick={handleResetFrame}
+                className="h-11 px-3 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-600/80 transition-all active:scale-95"
+                title="Kembalikan ke bingkai default"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
         </div>
       </main>
 
@@ -554,4 +536,4 @@ export default function Frame() {
       </footer>
     </div>
   );
-}
+  }
