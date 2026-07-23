@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Moon, Sun, Camera, Download, Trash2, Share2, Lock } from 'lucide-react';
 
 const FRAME_URL = "/twibbon.png";
-const WATERMARK_TEXT = "Dibuat oleh Verdoank";
+const WATERMARK_TEXT = "DIBUAT OLEH VERDOANK";
 
 export default function App() {
   // State Tema & UI (Ambil langsung dari kelas HTML agar bebas flash)
@@ -96,7 +96,7 @@ export default function App() {
       ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
       ctx.font = "600 36px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("Upload Foto Anda Di Sini", canvas.width / 2, canvas.height / 2);
+      ctx.fillText("UPLOAD FOTO ANDA DI SINI", canvas.width / 2, canvas.height / 2);
     }
 
     // 2. Gambar Bingkai Frame
