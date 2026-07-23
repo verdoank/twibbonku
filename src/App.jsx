@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Home as HomeIcon, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import Home from './Home.jsx';
 import Frame from './Frame.jsx';
 
@@ -7,32 +8,50 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
-      {/* Top Tab Navigation */}
-      <nav className="flex justify-center gap-2 pt-6 px-4">
-        <button
-          onClick={() => setActiveTab('default')}
-          className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-            activeTab === 'default'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-          }`}
-        >
-          Twibbon Default
-        </button>
-        <button
-          onClick={() => setActiveTab('custom')}
-          className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-            activeTab === 'custom'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-          }`}
-        >
-          Custom Frame (Unggah PNG)
-        </button>
+      
+      {/* Breadcrumb Navigation Bar */}
+      <nav className="w-full max-w-xl mx-auto pt-4 px-4 flex items-center justify-between text-xs sm:text-sm font-medium">
+        <ol className="inline-flex items-center space-x-1 sm:space-x-2 text-slate-500 dark:text-slate-400">
+          <li className="inline-flex items-center">
+            <button
+              onClick={() => setActiveTab('default')}
+              className={`inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ${
+                activeTab === 'default'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                  : ''
+              }`}
+            >
+              <HomeIcon className="w-3.5 h-3.5" />
+              <span>Twibbon Default</span>
+            </button>
+          </li>
+          
+          <li>
+            <div className="flex items-center">
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <button
+                onClick={() => setActiveTab('custom')}
+                className={`ml-1 sm:ml-2 inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ${
+                  activeTab === 'custom'
+                    ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                    : ''
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Custom Frame</span>
+              </button>
+            </div>
+          </li>
+        </ol>
+
+        {/* Status Badge Ringkas */}
+        <span className="text-[10px] sm:text-xs px-2.5 py-1 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-normal">
+          {activeTab === 'default' ? 'Mode Default' : 'Mode Custom'}
+        </span>
       </nav>
 
-      {/* Render Komponen Sesuai Tab Terpilih */}
+      {/* Render Halaman Sesuai Mode */}
       {activeTab === 'default' ? <Home /> : <Frame />}
     </div>
   );
-}
+                  }
