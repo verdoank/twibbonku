@@ -1,2 +1,3 @@
 # Twibbon Maker Online
-Unggah foto, sesuaikan posisi & ukuran, lalu unduh secara instan!
+
+Aplikasi pembuat twibbon online gratis, cepat, dan mudah tanpa aplikasi tambahan. Pasang foto ke bingkai kampanye, event, atau ucapan dengan kualitas tinggi (HD).
