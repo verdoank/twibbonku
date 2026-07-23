@@ -1,8 +1,9 @@
+// src/Frame.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Moon, Sun, Camera, Download, Trash2, Share2, Lock, Image as ImageIcon, RotateCcw } from 'lucide-react';
 
 const DEFAULT_FRAME_URL = "/twibbon.png";
-const WATERMARK_TEXT = "Twibbon Maker Online";
+const WATERMARK_TEXT = "DIBUAT OLEH VERDOANK";
 
 export default function Frame() {
   const [isDark, setIsDark] = useState(() => {
@@ -170,14 +171,49 @@ export default function Frame() {
     reader.readAsDataURL(file);
   };
 
+  // Fungsi Validasi Pixel Transparan
+  const checkTransparency = (img) => {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = img.width;
+    tempCanvas.height = img.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(img, 0, 0);
+
+    const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+    const data = imageData.data;
+
+    // Cek channel Alpha (setiap byte ke-4: index 3, 7, 11, dst.)
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 255) {
+        return true; // Ditemukan setidaknya 1 pixel transparan
+      }
+    }
+    return false; // Tidak ada transparansi sama sekali
+  };
+
   const handleFrameUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Pastikan ekstensi awal PNG
+    if (!file.type.includes('png')) {
+      alert("Format file tidak valid! Harap unggah gambar berformat PNG.");
+      if (frameFileInputRef.current) frameFileInputRef.current.value = "";
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
+        // Validasi transparansi pixel
+        const isTransparent = checkTransparency(img);
+        if (!isTransparent) {
+          alert("Gagal mengunggah! Gambar bingkai harus memiliki latar belakang transparan (lubang twibbon). File PNG ini terdeteksi padat/tanpa transparansi.");
+          if (frameFileInputRef.current) frameFileInputRef.current.value = "";
+          return;
+        }
+
         frameImgRef.current = img;
         setHasCustomFrame(true);
         requestDraw();
@@ -433,7 +469,7 @@ export default function Frame() {
         {/* Control Section */}
         <div className="w-full flex flex-col gap-3">
           
-          {/* 1. Tombol Foto User (Input Utama) */}
+          {/* 1. Tombol Pilih Foto Kamu */}
           <input
             type="file"
             ref={userFileInputRef}
@@ -478,8 +514,8 @@ export default function Frame() {
             </div>
           )}
 
-          {/* 2. Tombol Unggah Bingkai PNG Dipindah ke Bawah (Opsi Sekunder) */}
-          <div className="w-full flex gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/50">
+          {/* 2. Tombol Unggah Bingkai (Disamakan Tinggi h-14, Font text-lg & Style) */}
+          <div className="w-full flex gap-3">
             <input
               type="file"
               ref={frameFileInputRef}
@@ -490,20 +526,20 @@ export default function Frame() {
             
             <button
               onClick={() => frameFileInputRef.current?.click()}
-              className="flex-1 h-11 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-600/80 transition-all active:scale-95"
+              className="flex-1 h-14 bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl font-semibold text-base sm:text-lg flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-600 shadow-sm transition-all active:scale-95"
               title="Ganti bingkai dengan file PNG transparan buatan Anda"
             >
-              <ImageIcon className="w-4 h-4 text-indigo-500" />
-              {hasCustomFrame ? "Ganti Bingkai Custom (PNG)" : "Unggah Bingkai Sendiri (PNG)"}
+              <ImageIcon className="w-6 h-6 text-indigo-500" />
+              <span>{hasCustomFrame ? "Ganti Bingkai PNG" : "Unggah Bingkai Sendiri (PNG)"}</span>
             </button>
 
             {hasCustomFrame && (
               <button
                 onClick={handleResetFrame}
-                className="h-11 px-3 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-600/80 transition-all active:scale-95"
+                className="w-14 h-14 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-800 dark:text-slate-100 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-600 active:scale-95 transition-all"
                 title="Kembalikan ke bingkai default"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-6 h-6" />
               </button>
             )}
           </div>
@@ -524,7 +560,7 @@ export default function Frame() {
           Fitur Unggulan Custom Frame
         </h3>
         <ul className="list-disc pl-5 text-sm sm:text-base text-slate-500 dark:text-slate-400 space-y-1 mb-4">
-          <li><strong>Unggah Bingkai PNG Bebas:</strong> Mendukung gambar transparan HD.</li>
+          <li><strong>Unggah Bingkai PNG Transparan:</strong> Sistem otomatis memvalidasi apakah file memilliki lubang transparansi.</li>
           <li><strong>Bingkai Default Cepat:</strong> Menggunakan file bingkai utama jika tidak mengunggah bingkai custom.</li>
           <li><strong>Bebas Reset Bingkai:</strong> Kembali ke bingkai default kapan saja dengan satu klik.</li>
           <li><strong>Privasi Aman:</strong> Semua proses penggabungan dilakukan di browser Kamu tanpa diunggah ke server.</li>
@@ -536,4 +572,4 @@ export default function Frame() {
       </footer>
     </div>
   );
-  }
+}
