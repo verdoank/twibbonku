@@ -5,11 +5,9 @@ const FRAME_URL = "/twibbon.png";
 const WATERMARK_TEXT = "Dibuat oleh Verdoank";
 
 export default function App() {
-  // State Tema & UI
+  // State Tema & UI (Ambil langsung dari kelas HTML agar bebas flash)
   const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return document.documentElement.classList.contains('dark');
   });
   const [hasImage, setHasImage] = useState(false);
   
@@ -53,7 +51,7 @@ export default function App() {
   const initialScale = useRef(1);
   const animFrameId = useRef(null);
 
-  // Sync Tema Dark Mode
+  // Sync Tema Dark Mode ke DOM & LocalStorage saat ditekan
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -501,4 +499,4 @@ export default function App() {
       </footer>
     </div>
   );
-  }
+}
