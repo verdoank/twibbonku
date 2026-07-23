@@ -17,13 +17,28 @@
 
     <!-- Open Graph SEO -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://erdoank.github.io/" />
+    <meta property="og:url" content="https://ayunda.pages.dev/" />
     <meta property="og:title" content="Twibbon Maker Online Gratis - Buat & Pasang Bingkai Foto Cepat" />
     <meta property="og:description" content="Edit dan sesuaikan foto kamu ke dalam bingkai twibbon secara instan langsung dari browser." />
-    <meta property="og:image" content="https://i.imgur.com/2Y4qVfR.png" />
+    <meta property="og:image" content="https://ayunda.pages.dev/twibbon.png" />
+
+    <!-- Script Pencegah Kedipan Tema Terang saat Reload -->
+    <script>
+      (function() {
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
-  </html>
+    </html>
