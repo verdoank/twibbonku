@@ -1,6 +1,7 @@
 // src/Frame.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Moon, Sun, Camera, Download, Trash2, Share2, Lock, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import toast from 'react-hot-toast'; // <-- Impor toast
 
 const DEFAULT_FRAME_URL = "/twibbon.png";
 const WATERMARK_TEXT = "DIBUAT OLEH VERDOANK";
@@ -165,13 +166,14 @@ export default function Frame() {
         setIsLocked(false);
         setShowLockToast(false);
         requestDraw();
+        toast.success("Foto berhasil diunggah!");
       };
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
 
-  // Fungsi Validasi Pixel Transparan
+  // Validasi Pixel Transparan
   const checkTransparency = (img) => {
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = img.width;
@@ -182,22 +184,20 @@ export default function Frame() {
     const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
     const data = imageData.data;
 
-    // Cek channel Alpha (setiap byte ke-4: index 3, 7, 11, dst.)
     for (let i = 3; i < data.length; i += 4) {
       if (data[i] < 255) {
-        return true; // Ditemukan setidaknya 1 pixel transparan
+        return true;
       }
     }
-    return false; // Tidak ada transparansi sama sekali
+    return false;
   };
 
   const handleFrameUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Pastikan ekstensi awal PNG
     if (!file.type.includes('png')) {
-      alert("Format file tidak valid! Harap unggah gambar berformat PNG.");
+      toast.error("Format file harus PNG!");
       if (frameFileInputRef.current) frameFileInputRef.current.value = "";
       return;
     }
@@ -206,10 +206,11 @@ export default function Frame() {
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Validasi transparansi pixel
         const isTransparent = checkTransparency(img);
         if (!isTransparent) {
-          alert("Gagal mengunggah! Gambar bingkai harus memiliki latar belakang transparan (lubang twibbon). File PNG ini terdeteksi padat/tanpa transparansi.");
+          toast.error("Gagal! Bingkai harus memiliki area transparan.", {
+            duration: 4000
+          });
           if (frameFileInputRef.current) frameFileInputRef.current.value = "";
           return;
         }
@@ -217,6 +218,7 @@ export default function Frame() {
         frameImgRef.current = img;
         setHasCustomFrame(true);
         requestDraw();
+        toast.success("Bingkai custom berhasil diterapkan!");
       };
       img.src = event.target.result;
     };
@@ -226,6 +228,7 @@ export default function Frame() {
   const handleResetFrame = () => {
     loadDefaultFrame();
     if (frameFileInputRef.current) frameFileInputRef.current.value = "";
+    toast.success("Bingkai dikembalikan ke default");
   };
 
   const getCanvasCoords = (clientX, clientY) => {
@@ -384,13 +387,14 @@ export default function Frame() {
     link.download = "twibbon-saya.png";
     link.href = exportCanvas.toDataURL("image/png", 1.0);
     link.click();
+    toast.success("Gambar berhasil diunduh!");
   };
 
   const handleShare = async () => {
     setIsLocked(true);
 
     if (!navigator.share) {
-      alert("Fitur Web Share tidak didukung di browser ini. Gunakan tombol unduh.");
+      toast.error("Browser tidak mendukung fitur berbagi.");
       return;
     }
 
@@ -408,7 +412,7 @@ export default function Frame() {
             files: [file]
           });
         } catch (err) {
-          if (err.name !== "AbortError") alert("Gagal membagikan gambar.");
+          if (err.name !== "AbortError") toast.error("Gagal membagikan gambar.");
         }
       }
     }, "image/png");
@@ -514,7 +518,7 @@ export default function Frame() {
             </div>
           )}
 
-          {/* 2. Tombol Unggah Bingkai (Disamakan Tinggi h-14, Font text-lg & Style) */}
+          {/* 2. Tombol Unggah Bingkai */}
           <div className="w-full flex gap-3">
             <input
               type="file"
@@ -560,7 +564,7 @@ export default function Frame() {
           Fitur Unggulan Custom Frame
         </h3>
         <ul className="list-disc pl-5 text-sm sm:text-base text-slate-500 dark:text-slate-400 space-y-1 mb-4">
-          <li><strong>Unggah Bingkai PNG Transparan:</strong> Sistem otomatis memvalidasi apakah file memilliki lubang transparansi.</li>
+          <li><strong>Unggah Bingkai PNG Transparan:</strong> Sistem otomatis memvalidasi apakah file memiliki transparansi.</li>
           <li><strong>Bingkai Default Cepat:</strong> Menggunakan file bingkai utama jika tidak mengunggah bingkai custom.</li>
           <li><strong>Bebas Reset Bingkai:</strong> Kembali ke bingkai default kapan saja dengan satu klik.</li>
           <li><strong>Privasi Aman:</strong> Semua proses penggabungan dilakukan di browser Kamu tanpa diunggah ke server.</li>
