@@ -97,7 +97,7 @@ export default function Frame() {
       ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
       ctx.font = "600 36px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("Upload Foto Anda Di Sini", canvas.width / 2, canvas.height / 2);
+      ctx.fillText("UPLOAD FOTO ANDA DI SINI", canvas.width / 2, canvas.height / 2);
     }
 
     if (frameImgRef.current) {
